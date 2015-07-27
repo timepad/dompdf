@@ -12,6 +12,8 @@
  *
  * @access private
  * @package dompdf
+ *
+ * @property Page_Frame_Decorator _frame
  */
 class Page_Frame_Reflower extends Frame_Reflower {
 
@@ -70,6 +72,26 @@ class Page_Frame_Reflower extends Frame_Reflower {
   
   //........................................................................
 
+  protected function set_page_dimensions($child) {
+    $style = $this->_frame->get_style();
+
+    // Pages are only concerned with margins
+    $cb = $this->_frame->get_containing_block();
+
+    $left   = $style->length_in_pt($style->margin_left,   $cb["w"]);
+    $right  = $style->length_in_pt($style->margin_right,  $cb["w"]);
+    $top    = $style->length_in_pt($style->margin_top,    $cb["h"]);
+    $bottom = $style->length_in_pt($style->margin_bottom, $cb["h"]);
+
+    $content_x = $cb["x"] + $left;
+    $content_y = $cb["y"] + $top;
+    $content_width = $cb["w"] - $left - $right;
+    $content_height = $cb["h"] - $top - $bottom;
+
+
+    $child->set_containing_block($content_x, $content_y, $content_width, $content_height);
+  }
+
   /**
    * Paged layout:
    * http://www.w3.org/TR/CSS21/page.html
@@ -82,34 +104,18 @@ class Page_Frame_Reflower extends Frame_Reflower {
     
     while ($child) {
       $this->apply_page_style($this->_frame, $current_page + 1);
-      
-      $style = $this->_frame->get_style();
-  
-      // Pages are only concerned with margins
-      $cb = $this->_frame->get_containing_block();
-      $left   = $style->length_in_pt($style->margin_left,   $cb["w"]);
-      $right  = $style->length_in_pt($style->margin_right,  $cb["w"]);
-      $top    = $style->length_in_pt($style->margin_top,    $cb["h"]);
-      $bottom = $style->length_in_pt($style->margin_bottom, $cb["h"]);
-      
-      $content_x = $cb["x"] + $left;
-      $content_y = $cb["y"] + $top;
-      $content_width = $cb["w"] - $left - $right;
-      $content_height = $cb["h"] - $top - $bottom;
-      
+
+      $this->set_page_dimensions($child);
+
       // Only if it's the first page, we save the nodes with a fixed position
       if ($current_page == 0) {
-        $children = $child->get_children();
-        foreach ($children as $onechild) {
+        foreach ($child->get_children() as $onechild) {
           if ($onechild->get_style()->position === "fixed") {
             $fixed_children[] = $onechild->deep_copy();
           }
         }
         $fixed_children = array_reverse($fixed_children);
       }
-      
-      $child->set_containing_block($content_x, $content_y, $content_width, $content_height);
-      
       // Check for begin reflow callback
       $this->_check_callbacks("begin_page_reflow", $child);
     
@@ -121,6 +127,17 @@ class Page_Frame_Reflower extends Frame_Reflower {
       }
       
       $child->reflow();
+
+
+      $force_page = null;
+
+      foreach ($child->get_children() as $onechild) {
+        if ($onechild->get_style()->set_page !== "auto") {
+          $force_page = preg_split("#[\\s]+#siu", $onechild->get_style()->set_page);
+          break;
+        }
+      }
+
       $next_child = $child->get_next_sibling();
       
       // Check for begin render callback
@@ -133,7 +150,15 @@ class Page_Frame_Reflower extends Frame_Reflower {
       $this->_check_callbacks("end_page_render", $child);
       
       if ( $next_child ) {
-        $this->_frame->next_page();
+
+        if ($force_page) {
+          //$cb = $this->_frame->get_renderer()->new_page_size($force_page[0], $force_page[1]);
+          $cb = $this->_frame->next_document($force_page[0], $force_page[1]);
+          $this->_frame->set_containing_block(0, 0, $cb[2], $cb[3]);
+        } else {
+          $this->_frame->next_page();
+        }
+
       }
 
       // Wait to dispose of all frames on the previous page

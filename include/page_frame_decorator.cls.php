@@ -116,6 +116,15 @@ class Page_Frame_Decorator extends Frame_Decorator {
   }
 
   /**
+   * Start a new page by resetting the full flag.
+   */
+  function next_document($page, $orientation) {
+    $this->_floating_frames = array();
+    $this->_page_full = false;
+    return $this->_renderer->new_page_size($page, $orientation);
+  }
+
+  /**
    * Indicate to the page that a table is currently being reflowed.
    */
   function table_reflow_start() {

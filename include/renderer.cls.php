@@ -46,6 +46,18 @@ class Renderer extends Abstract_Renderer {
   }
 
   /**
+   * Advance the canvas to the next page
+   */
+  function new_page_size($page, $orientation) {
+    if (method_exists($this->_canvas, 'new_page_size')) {
+      $this->_canvas->new_page_size($page, $orientation);
+    } else {
+      $this->_canvas->new_page();
+    }
+    return $this->_canvas->get_size($page, $orientation);
+  }
+
+  /**
    * Render frames recursively
    *
    * @param Frame $frame the frame to render

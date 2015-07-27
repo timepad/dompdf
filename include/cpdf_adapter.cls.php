@@ -817,6 +817,13 @@ class CPDF_Adapter implements Canvas {
     $this->_page_text[] = compact("_t", "code", "type");
   }
 
+  function new_page_size($paper, $orientation) {
+    $size = $this->get_size($paper, $orientation);
+    $this->_width = $size[2] - $size[0];
+    $this->_height= $size[3] - $size[1];
+    $this->_pdf->newDocument($size);
+  }
+
   function new_page() {
     $this->_page_number++;
     $this->_page_count++;

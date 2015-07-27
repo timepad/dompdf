@@ -297,6 +297,7 @@ class Style {
       $d["pause_before"] = "0";
       $d["pause"] = "";
       $d["pitch_range"] = "50";
+      $d["set_page"] = "auto";
       $d["pitch"] = "medium";
       $d["play_during"] = "auto";
       $d["position"] = "static";
@@ -383,6 +384,7 @@ class Style {
         "word_wrap",
         "widows",
         "word_spacing",
+        "set_page"
       );
     }
   }
